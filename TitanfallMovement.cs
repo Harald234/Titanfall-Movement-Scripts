@@ -6,19 +6,18 @@ using EZCameraShake;
 public class TitanfallMovement : MonoBehaviour
 {
 
-    Vector3 move;
-    Vector3 input;
-    Vector3 Yvelocity;
-    Vector3 forwardDirection;
+    #region Inspector Variables
     [Header("Debug")]
     [SerializeField] float speed;
     [SerializeField] float gravity;
-    int jumpCharges;
+    [SerializeField] int jumpCharges;
     [SerializeField] float slideTimer;
+    [SerializeField] Vector3 move;
+    [SerializeField] Vector3 input;
+    [SerializeField] Vector3 Yvelocity;
+    [SerializeField] Vector3 forwardDirection;
 
     [Header("Grounded Movement Config")]
-    CharacterController controller;
-    [Space]
     public float runSpeed;
     public float sprintSpeed;
     public float crouchSpeed;
@@ -49,6 +48,8 @@ public class TitanfallMovement : MonoBehaviour
     public float climbSpeed;
     public float maxClimbTimer;
     public float sphereCastRadius;
+
+    [Header("Mantle Config")]
     public float mantleHeightOffset;
 
 
@@ -73,50 +74,74 @@ public class TitanfallMovement : MonoBehaviour
     [Header("Animation Config")]
     public Animator handAnimator;
 
+    #endregion
+
+    #region Private Variables
+    //Private
+
+    //Movement
+    CharacterController controller;
+
+    //Movement States
     bool isSprinting;
     bool isCrouching;
     bool isSliding;
     bool isWallRunning;
     bool isGrounded;
+
+    //Crouching
     Vector3 crouchingCenter = new Vector3(0, 0.5f, 0);
     Vector3 standingCenter = new Vector3(0, 0, 0);
 
-    [SerializeField] bool onLeftWall;
-    [SerializeField] bool onRightWall;
+    //Wallrunning
+    bool onLeftWall;
+    bool onRightWall;
     bool hasWallRun = false;
     private RaycastHit leftWallHit;
     private RaycastHit rightWallHit;
     Vector3 wallNormal;
     Vector3 lastWall;
 
+    //Wall-jump
+    bool isWallJumping;
+    float wallJumpTimer;
+
+    //Climbing
     bool isClimbing;
     bool hasClimbed;
     bool canClimb;
     private RaycastHit wallHit;
+    float climbTimer;
+
+    //Mantle
     public RaycastHit mantleTop;
     public RaycastHit mantleBottom;
 
-
-    float climbTimer;
-
-    bool isWallJumping;
-    float wallJumpTimer;
-
+    //Camera
     float normalFov;
-
     CameraShakeInstance currentShake;
 
+    #endregion
 
+    #region Start
     void Start()
     {
+        //Set bools variables and get references
         controller = GetComponent<CharacterController>();
+
         startHeight = transform.localScale.y;
+
         jumpCharges = maxJumpCharges;
+
         normalFov = playerCamera.fieldOfView;
+
         currentShake = EZCameraShake.CameraShaker.Instance.StartShake(.001f, .001f, .001f);
 
     }
 
+    #endregion
+
+    #region Speed Control
     void IncreaseSpeed(float speedIncrease)
     {
         speed += speedIncrease * Time.deltaTime;
@@ -130,8 +155,9 @@ public class TitanfallMovement : MonoBehaviour
     {
         speed = Mathf.Lerp(speed, newSpeed, Time.deltaTime * velocityAdjustSpeed);
     }
+    #endregion
 
-    // Update is called once per frame
+    #region Update
     void Update()
     {
         HandleInput();
@@ -140,10 +166,8 @@ public class TitanfallMovement : MonoBehaviour
         if (!isGrounded) 
         {
             CheckClimbing();
-
         }
 
-        UpdateAnims();
 
         if (isGrounded && !isSliding)
         {
@@ -179,7 +203,10 @@ public class TitanfallMovement : MonoBehaviour
                 hasClimbed = true;
             }
         }
+
         CameraEffects();
+        UpdateAnims();
+
     }
 
     void FixedUpdate()
@@ -187,24 +214,11 @@ public class TitanfallMovement : MonoBehaviour
         CheckGround();
         controller.Move(move);
         ApplyGravity();
-        RunShake();
-    }
-    void RunShake()
-    {
-        if (isSprinting && isGrounded)
-        {
-
-        }
-        else if (isCrouching && isGrounded)
-        {
-
-        }
-        else if (controller.velocity.magnitude > .1f && isGrounded && !isWallRunning && !isClimbing)
-        {
-
-        }
     }
 
+    #endregion
+
+    #region Camera
     void CameraEffects()
     {
         float fov = isWallRunning ? specialFov : isSliding ? specialFov : normalFov;
@@ -226,7 +240,9 @@ public class TitanfallMovement : MonoBehaviour
             tilt = Mathf.Lerp(tilt, 0f, cameraChangeTime * Time.deltaTime);
         }
     }
+    #endregion
 
+    #region Input
     void HandleInput()
     {
         bool wasIdle = input.z == 0 && input.x == 0;
@@ -234,7 +250,7 @@ public class TitanfallMovement : MonoBehaviour
         //If player is standing still remove all shake
         if (!wasIdle && (input.z == 0 && input.x == 0))
         {
-            currentShake.StartFadeOut(.1f);
+            currentShake.StartFadeOut(.05f);
         }
         //If player is beginning to run apply run shake
         if ((input.z != 0 || input.x != 0) && wasIdle)
@@ -294,17 +310,9 @@ public class TitanfallMovement : MonoBehaviour
         }
         
     }
-    private void OnDrawGizmos()
-    {
-        Gizmos.color = Color.red;
-        Debug.Log("Top point: " + mantleTop.point);
-        Gizmos.DrawWireSphere(mantleTop.point, sphereCastRadius);
-        Gizmos.color = Color.green;
-        Vector3 mantleCheckPosTop = new Vector3(transform.position.x, transform.position.y + -.4f, transform.position.z);
+    #endregion
 
-        Debug.Log("Bottom point: " + mantleBottom.point);
-        Gizmos.DrawWireSphere(mantleCheckPosTop, sphereCastRadius);
-    }
+    #region Mantle
     void Mantle()
     {
         //Stop climbing if we are
@@ -315,9 +323,12 @@ public class TitanfallMovement : MonoBehaviour
         //Play animation
         handAnimator.Play("Mantle");
         //Apply camera shake
-        EZCameraShake.CameraShaker.Instance.ShakeOnce(2f, .5f, .1f, .5f);
+        EZCameraShake.CameraShaker.Instance.ShakeOnce(2f, .5f, .1f, .1f);
 
     }
+    #endregion
+
+    #region Animations
     void UpdateAnims()
     {
 
@@ -341,10 +352,16 @@ public class TitanfallMovement : MonoBehaviour
         if (input.z == 0 && input.x == 0) handAnimator.SetFloat("Speed", 0f);
 
     }
+    #endregion
+
+    #region Player Movement
 
     void CheckGround()
     {
+        bool inAir = !isGrounded;
         isGrounded = Physics.CheckSphere(groundCheck.position, 0.25f, groundMask);
+        //If we just hit the floor set our y velocity to zero
+        if (isGrounded && inAir) Yvelocity.y = 0;
         if (isGrounded)
         {
             jumpCharges = maxJumpCharges;
@@ -481,7 +498,9 @@ public class TitanfallMovement : MonoBehaviour
 
 
     }
+    #endregion
 
+    #region Crouch
     void Crouch()
     {
         if (!isCrouching)
@@ -517,7 +536,9 @@ public class TitanfallMovement : MonoBehaviour
         isCrouching = false;
         isSliding = false;
     }
+    #endregion
 
+    #region Wallrun
     void TestWallRun()
     {
         wallNormal = onRightWall ? rightWallHit.normal : leftWallHit.normal;
@@ -561,7 +582,9 @@ public class TitanfallMovement : MonoBehaviour
         wallJumpTimer = maxWallJumpTimer;
        
     }
-    
+    #endregion
+
+    #region Jump
     void Jump()
     {
         if (!isWallRunning && !isClimbing)
@@ -590,12 +613,20 @@ public class TitanfallMovement : MonoBehaviour
         climbTimer = maxClimbTimer;
         Yvelocity.y = Mathf.Sqrt(jumpHeight * jumpMultiplier * -2f * normalGravity);
     }
+    #endregion
 
+    #region Gravity
     void ApplyGravity()
     {
         gravity = isWallRunning ? wallRunGravity : isClimbing ? 0f : normalGravity;
-        Yvelocity.y += gravity;
+        if (!isGrounded)
+        {
+            Yvelocity.y += gravity;
+
+        }
+        
         controller.Move(Yvelocity);
     }
+    #endregion
 }
 
