@@ -332,9 +332,22 @@ public class TitanfallMovement : MonoBehaviour
     void UpdateAnims()
     {
 
-
+        //Check Animations
         handAnimator.SetBool("Grounded", isGrounded);
+
+        //General Movement
+        handAnimator.SetFloat("MoveDirectionX", move.x);
+        handAnimator.SetFloat("MoveDirectionY", move.y);
+
+        handAnimator.SetFloat("Speed", speed);
+        if (input.z == 0 && input.x == 0) handAnimator.SetFloat("Speed", 0f);
+
+        //Ground Movement
+        handAnimator.SetBool("Sprinting", isSprinting);
+        handAnimator.SetBool("Crouching", isCrouching);
+        //Special Movement
         handAnimator.SetBool("Climbing", isClimbing);
+
         if (isWallRunning)
         {
             handAnimator.SetBool("Wall Left", onLeftWall);
@@ -346,10 +359,9 @@ public class TitanfallMovement : MonoBehaviour
             handAnimator.SetBool("Wall Right", false);
         }
 
-        //Set floats
-        handAnimator.SetFloat("Speed", speed);
+        //Keep in mind the mantle animation is played in the Mantle() function!
 
-        if (input.z == 0 && input.x == 0) handAnimator.SetFloat("Speed", 0f);
+
 
     }
     #endregion
