@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using EZCameraShake;
 
+[DisallowMultipleComponent]
 public class TitanfallMovement : MonoBehaviour
 {
 
     #region Inspector Variables
+   
     [Header("Debug")]
     [SerializeField] float speed;
     [SerializeField] float gravity;
@@ -73,6 +75,18 @@ public class TitanfallMovement : MonoBehaviour
 
     [Header("Animation Config")]
     public Animator handAnimator;
+
+    [Header("Keybind Config")]
+    public KeyCode forwardKey = KeyCode.W;
+    public KeyCode backwardKey = KeyCode.S;
+    public KeyCode leftKey = KeyCode.A;
+    public KeyCode rightKey = KeyCode.D;
+    [Space]
+    public KeyCode sprintKey = KeyCode.LeftShift;
+    [Space]
+    public KeyCode jumpKey = KeyCode.Space;
+    [Space]
+    public KeyCode crouchKey = KeyCode.LeftControl;
 
     #endregion
 
@@ -247,6 +261,18 @@ public class TitanfallMovement : MonoBehaviour
     {
         bool wasIdle = input.z == 0 && input.x == 0;
         input = new Vector3(Input.GetAxisRaw("Horizontal"), 0f, Input.GetAxisRaw("Vertical"));
+        input.x = 0;
+        input.z = 0;
+        //Pressing Forward Key
+        if (Input.GetKey(forwardKey) && !Input.GetKey(backwardKey)) input.z = 1;
+        //Pressing Backward Key
+        if (Input.GetKey(backwardKey) && !Input.GetKey(forwardKey)) input.z = -1;
+        //Pressing Left Key
+        if (Input.GetKey(leftKey) && !Input.GetKey(rightKey)) input.x = -1;
+        //Pressing Right Key
+        if (Input.GetKey(rightKey) && !Input.GetKey(leftKey)) input.x = 1;
+        #endregion
+
         //If player is standing still remove all shake
         if (!wasIdle && (input.z == 0 && input.x == 0))
         {
@@ -272,16 +298,16 @@ public class TitanfallMovement : MonoBehaviour
         }
 
 
-        if (Input.GetKey(KeyCode.LeftControl) && isGrounded)
+        if (Input.GetKey(crouchKey) && isGrounded)
         {
             Crouch();
         }
-        if (Input.GetKeyUp(KeyCode.LeftControl))
+        if (Input.GetKeyUp(crouchKey))
         {
             ExitCrouch();
         }
 
-        if (Input.GetKeyDown(KeyCode.LeftShift) && isGrounded && !isCrouching)
+        if (Input.GetKeyDown(sprintKey) && isGrounded && !isCrouching)
         {
             currentShake.StartFadeOut(.1f);
             currentShake = EZCameraShake.CameraShaker.Instance.StartShake(.4f, .55f, .001f);
@@ -289,12 +315,12 @@ public class TitanfallMovement : MonoBehaviour
 
             isSprinting = true;
         }
-        if (Input.GetKeyUp(KeyCode.LeftShift))
+        if (Input.GetKeyUp(sprintKey))
         {
             isSprinting = false;
         }
 
-        if (Input.GetKeyDown(KeyCode.Space) && jumpCharges > 0)
+        if (Input.GetKeyDown(jumpKey) && jumpCharges > 0)
         {
             Jump();
         }
@@ -407,7 +433,7 @@ public class TitanfallMovement : MonoBehaviour
     {
         canClimb = Physics.SphereCast(transform.position, sphereCastRadius, transform.forward, out wallHit, 0.7f, wallMask);
         float wallAngle = Vector3.Angle(-wallHit.normal, transform.forward);
-        if (wallAngle < 15 && canClimb && !hasClimbed && Input.GetKey(KeyCode.Space))
+        if (wallAngle < 15 && canClimb && !hasClimbed && Input.GetKey(jumpKey))
         {
             isClimbing = true;
         }
